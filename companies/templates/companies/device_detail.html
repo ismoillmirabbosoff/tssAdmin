@@ -1,0 +1,11 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+  <h1>Device: {{ device.qrID }}</h1>
+
+  <p><strong>Company:</strong> {{ device.company.name }}</p>
+  <p><strong>Email:</strong> {{ device.company.email }}</p>
+  <p><strong>Address:</strong> {{ device.company.address }}</p>
+
+
+{% endblock %}

@@ -1,0 +1,92 @@
+from django.db import models
+from django.db.models.base import Model
+from django.db.models.fields import UUIDField
+import uuid
+from django.urls import reverse # Used to generate URLs by reversing the URL patterns
+from django.utils.crypto import get_random_string
+from .producer import publish
+# from .producer2 import publish
+
+def UniqueID():
+    return get_random_string(length=7).upper()
+
+def UniqueID2():
+    return get_random_string(length=20).upper()
+
+class Company(models.Model):
+    id = models.CharField(max_length=20,primary_key=True, default=UniqueID2,editable=False)
+    name = models.CharField(max_length=200)
+    #paymentHistory = foreighkey
+    email = models.EmailField(max_length=200)
+    dress = models.TextField(max_length=500)
+    active = models.BooleanField() # needs to be true if paid 
+
+    def __str__(self):
+        return self.name +"\n"+ self.email +"\n"+ self.address
+
+    def get_absolute_url(self):
+        return reverse('company-detail', args=[str(self.id)])
+
+    def save(self,*args, **kwargs):
+        if self._state.adding:
+            data = self.dataToManager()
+            publish("saveCompany",data,'adminToManager')
+        return super().save(*args, **kwargs)
+    
+    def dataToManager(self):
+        return {
+            "id":self.id,
+            "name":self.name,
+            "email":self.email,
+            "address":self.address,
+            "active":self.active
+        }
+
+
+    # while True:
+    #     id = get_random_string(length=7).upper()
+    #     if not Device.objects.filter(pk=id).exists():
+    #         return id
+
+class Device(models.Model):
+    deviceID = models.CharField(max_length=7,unique=True, default=UniqueID,editable=False)
+    qrID = models.CharField(max_length=7,unique=True, default=UniqueID)
+    simCard = models.CharField(max_length=20,null=True,blank=True)
+    firmWareVersion = models.CharField(max_length=7,default="v0")
+    company = models.ForeignKey('Company', null=True, on_delete=models.RESTRICT)
+    # needs to ask for MAC and IP before upgrading
+
+
+    def save(self,*args, **kwargs):
+        if self._state.adding:
+            data = self.dataToTss()
+            publish("saveDevice",data,'adminToTss')
+            data = self.dataToManager(data)
+            publish("saveDevice",data,'adminToManager')
+            #    if not self._state.adding and (
+            # self.creator_id != self._loaded_values['creator_id']):
+        # PUBLISHER.publish_message("save",self.dataToTss())
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.deviceID
+
+    def dataToManager(self,data):
+        # del data["qrID"]
+        return data
+
+    def dataToTss(self):
+        return {
+            "deviceID":self.deviceID,
+            "qrID":self.qrID,
+            "companyID":self.company.id
+        }
+
+    # def get_absolute_url(self):
+    #     return reverse('device-detail', args=[str(self.id)])
+
+
+    #def __init__(self,firmWareVersion="v1")
+
+
+# class FirmWare(models.Model)
